@@ -10,7 +10,7 @@ setup(
     author='Deleranax',
     author_email='deleranax@gmail.com',
     url='https://github.com/deleranax',
-    download_url='https://github.com/user/reponame/archive/v_01.tar.gz',
+    download_url='https://github.com/Deleranax/gym-puissance4/archive/v0.1.tar.gz',
     keywords=[
         'gym',
         'puissance4'],
