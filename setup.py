@@ -2,8 +2,8 @@ from setuptools import \
     setup
 
 setup(
-    name='gym-puissance4',
-    packages=['gym-puissance4'],
+    name='gym_puissance4',
+    packages=['gym_puissance4'],
     version='0.1',
     license='MIT',
     description='Environement Gym pour le jeu Puissance4',
