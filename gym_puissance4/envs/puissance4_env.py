@@ -72,7 +72,7 @@ class Puissance4Env(gym.Env):
 
     def render(self, mode='human', close=False):
         if close:
-            self.thread.done = False
+            self.thread.close()
         if self.thread is None:
             self.thread = WindowThread()
         else:
@@ -161,6 +161,7 @@ class Puissance4Env(gym.Env):
 class WindowThread(Thread):
     def __init__(self):
         Thread.__init__(self)
+        self.has_to_close = False
         self.loop = True
         self.update_needed = False
         self.grid = None
@@ -190,6 +191,9 @@ class WindowThread(Thread):
             self.window.destroy()
             self.window = None
             self.loop = False
+
+    def close(self):
+        self.loop = False
 
     def run(self):
         while self.loop:
@@ -222,5 +226,5 @@ class WindowThread(Thread):
             if self.loop and self.window is not None:
                 self.window.update()
 
-            if self.done:
+            if not self.loop:
                 self.stop()
