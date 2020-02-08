@@ -67,6 +67,10 @@ class Puissance4Env(gym.Env):
         return (self.pawn-1, tuple(tuple(i) for i in self.grid)), self.reward, self.has_won or self.is_grid_full(), {}
 
     def reset(self):
+        if not self.window is None:
+            self.window.destroy()
+            self.window.close()
+            self.window.mainloop()
         self.__init__()
 
     def render(self, mode='human', close=False):
