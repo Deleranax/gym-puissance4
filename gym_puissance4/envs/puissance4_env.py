@@ -69,7 +69,6 @@ class Puissance4Env(gym.Env):
     def reset(self):
         if not self.window is None:
             self.window.destroy()
-            self.window.close()
             self.window.mainloop()
         self.__init__()
 
