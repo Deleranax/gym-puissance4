@@ -1,8 +1,11 @@
+from threading import \
+    Thread
+
 import gym
 from gym import error, utils, spaces
 
 try:
-    import tkinter
+    import tkinter as tk
 except ImportError as ie:
     error.DependencyNotInstalled(ie)
 
@@ -12,122 +15,161 @@ class Puissance4Env(gym.Env):
 
     def __init__(self):
         # Variables
-        self.grille = []
+        self.grid = []
         self.has_won = False
         self.turn = 0
         self.turn_logical = False
+        self.pawn = 0
+        self.reward = 0
+        self.last_turn_reward = [0, 0]
+
+        # Tkinter
+        self.window = None
+        self.canvas = None
+        self.label = None
 
         # Créer la grille
         for y in range(6):
-            self.grille.append([0] * 7)
+            self.grid.append([0] * 7)
 
         # Env
         self.action_space = spaces.Discrete(7)
-        self.observation_space = spaces.Tuple(tuple(spaces.Tuple(tuple(spaces.Discrete(3) for i in range(7))) for i in range(6)))
+        self.observation_space = spaces.Tuple((
+            spaces.Discrete(2),
+            spaces.Tuple(tuple(
+                spaces.Tuple(tuple(
+                    spaces.Discrete(3) for i in range(7)
+                )) for i in range(6)
+            ))
+        ))
 
     def step(self, action):
         if not self.turn_logical:
-            pawn = 1
+            self.pawn = 1
         else:
-            pawn = 2
+            self.pawn = 2
 
         if not action >= 0 or action <= 6:
             error.InvalidAction("Action must be a number between 0 and 6 inclued.")
 
-        play_valid = self.add_pawn(action, pawn)
-        reward = -1
+        play_valid = self.add_pawn(action)
+        self.reward = -1
 
         if play_valid:
-            reward = self.get_reward(pawn)
+            self.reward = self.get_reward()
+
         if not self.turn_logical:
             self.turn_logical = True
         else:
             self.turn_logical = False
             self.turn += 1
 
-        return tuple(tuple(i) for i in self.grille), reward, self.has_won or self.is_grid_full(), {}
+        return (self.pawn-1, tuple(tuple(i) for i in self.grid)), self.reward, self.has_won or self.is_grid_full(), {}
 
     def reset(self):
         self.__init__()
 
     def render(self, mode='human', close=False):
-        print("* " + "− " * len(self.grille[0]) + "*", end="\n")
-        for y in self.grille:
-            print("|", end=" ")
-            for x in y:
-                print(x, end=" ")
-            print("|")
-        print("* " + "- " * len(self.grille[0]) + "*")
+        if self.window is None:
+            self.window = tk.Tk()
+            self.window.geometry('700x650')
+            self.window.resizable(0, 0)
+            self.window.title = "Puissance4"
+
+            self.canvas = tk.Canvas(self.window, height=600, width=700)
+            self.canvas.pack()
+            tk.Label(self.window, text="Yellow: Player 0 | Red: Player 1").pack()
+            self.label = tk.Label(self.window, text="Player 1 Score: 0.0")
+            self.label.pack()
+            self.window.update()
+
+        self.canvas.create_rectangle(0, 0, 700, 600)
+        for y in range(len(self.grid)):
+            for x in range(len(self.grid[y])):
+                if self.grid[y][x] == 0:
+                    self.canvas.create_rectangle(x*100, y*100, (x+1)*100, (y+1)*100, fill="white")
+                elif self.grid[y][x] == 1:
+                    self.canvas.create_rectangle(x*100, y*100, (x+1)*100, (y+1)*100, fill="yellow")
+                else:
+                    self.canvas.create_rectangle(x*100, y*100, (x+1)*100, (y+1)*100, fill="red")
+        self.label.configure(text="Player {} ".format(self.pawn-1) + "Score: {}".format(self.reward))
+        self.window.update()
 
     def is_column_full(self, colonne):
-        for i in self.grille:
+        for i in self.grid:
             if i[colonne] == 0:
                 return False
         return True
 
     def is_grid_full(self):
-        for i in range(len(self.grille[0])):
+        for i in range(len(self.grid[0])):
             if not self.is_column_full(i):
                 return False
         return True
 
-    def add_pawn(self, colonne, pawn):
+    def add_pawn(self, colonne):
         if self.is_column_full(colonne):
             return False
         else:
-            for i in range(len(self.grille)):
-                if self.grille[i][colonne] != 0:
-                    self.grille[i - 1][colonne] = pawn
+            for i in range(len(self.grid)):
+                if self.grid[i][colonne] != 0:
+                    self.grid[i - 1][colonne] = self.pawn
                     return True
-                elif i == len(self.grille) - 1:
-                    self.grille[i][colonne] = pawn
+                elif i == len(self.grid) - 1:
+                    self.grid[i][colonne] = self.pawn
                     return True
 
-    def count_lines(self, length, pawn):
+    def count_lines(self, length):
         count = 0
 
         # Colonnes
-        for x in range(len(self.grille[0])):
-            for y in range(len(self.grille) - length):
+        for x in range(len(self.grid[0])):
+            for y in range(len(self.grid) - length + 1):
                 condition = True
                 for i in range(length):
-                    condition = condition and self.grille[y + i][x] == pawn
+                    condition = condition and self.grid[y + i][x] == self.pawn
                 if condition:
                     count += 1
 
         # Lignes
-        for y in range(len(self.grille)):
-            for x in range(len(self.grille[0]) - length):
+        for y in range(len(self.grid)):
+            for x in range(len(self.grid[0]) - length + 1):
                 condition = True
                 for i in range(length):
-                    condition = condition and self.grille[y][x + i] == pawn
+                    condition = condition and self.grid[y][x + i] == self.pawn
                 if condition:
                     count += 1
 
         # Digonales 1
-        for y in range(len(self.grille) - 3):
-            for x in range(len(self.grille[0]) - length):
+        for y in range(len(self.grid) - length + 1):
+            for x in range(len(self.grid[0]) - length + 1):
                 condition = True
                 for i in range(length):
-                    condition = condition and self.grille[y + i][x + i] == pawn
+                    condition = condition and self.grid[y + i][x + i] == self.pawn
                 if condition:
                     count += 1
 
         # Digonales 2
-        for y in range(len(self.grille) - length):
-            for x in range(3, len(self.grille[0])):
+        for y in range(len(self.grid) - length + 1):
+            for x in range(length-1, len(self.grid[0])):
                 condition = True
                 for i in range(length):
-                    condition = condition and self.grille[y + i][x - i] == pawn
+                    condition = condition and self.grid[y + i][x - i] == self.pawn
                 if condition:
                     count += 1
         if length == 4 and count > 0:
             self.has_won = True
         return count
 
-    def get_reward(self, pawn):
-        if self.count_lines(4, pawn) >= 1:
+    def get_reward(self):
+        if self.count_lines(4) >= 1:
             reward = 50.0
+        elif self.turn_logical:
+            reward = (self.count_lines(3) * 6) + self.count_lines(2) - (0.1*self.turn)
+            self.last_turn_reward[1] = reward
+            reward = reward - (0.1*self.last_turn_reward[0])
         else:
-            reward = (self.count_lines(3, pawn) * 3) + self.count_lines(2, pawn) - (0.1*self.turn)
+            reward = (self.count_lines(3) * 6) + self.count_lines(2) - (0.1*self.turn)
+            self.last_turn_reward[0] = reward
+            reward = reward - (0.1*self.last_turn_reward[1])
         return reward

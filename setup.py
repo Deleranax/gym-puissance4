@@ -4,7 +4,7 @@ from setuptools import setup
 setup(
     name='gym_puissance4',
     packages=setuptools.find_packages(),
-    version='0.2',
+    version='0.4',
     license='MIT',
     description='Environement Gym pour le jeu Puissance4',
     author='Deleranax',
@@ -13,6 +13,7 @@ setup(
     keywords=[
         'gym',
         'puissance4'],
-    install_requires=['gym'],
+    install_requires=[
+        'gym'],
     python_requires='>=3.6'
 )
