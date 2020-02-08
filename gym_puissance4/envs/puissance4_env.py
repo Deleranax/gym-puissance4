@@ -22,18 +22,21 @@ class Puissance4Env(gym.Env):
             self.grille.append([0] * 7)
 
         # Env
-        self.action_space = spaces.Tuple((spaces.Discrete(2), spaces.Discrete(7)))
+        self.action_space = spaces.Discrete(7)
         self.observation_space = spaces.Tuple(tuple(spaces.Tuple(tuple(spaces.Discrete(3) for i in range(7))) for i in range(6)))
 
     def step(self, action):
-        if not action[0] == 1 or action[0] == 2:
-            error.InvalidAction("Pawn must be 0 or 1.")
-        pawn = action[0]+1
-        action = action[1]
-        if not action == 1 or action == 2:
+        if not self.turn_logical:
+            pawn = 1
+        else:
+            pawn = 2
+
+        if not action >= 0 or action <= 6:
             error.InvalidAction("Action must be a number between 0 and 6 inclued.")
+
         play_valid = self.add_pawn(action, pawn)
         reward = -1
+
         if play_valid:
             reward = self.get_reward(pawn)
         if not self.turn_logical:
@@ -41,6 +44,7 @@ class Puissance4Env(gym.Env):
         else:
             self.turn_logical = False
             self.turn += 1
+
         return tuple(tuple(i) for i in self.grille), reward, self.has_won or self.is_grid_full(), {}
 
     def reset(self):
@@ -122,4 +126,8 @@ class Puissance4Env(gym.Env):
         return count
 
     def get_reward(self, pawn):
-        return (self.count_lines(3, pawn) * 3) + self.count_lines(2, pawn) + (self.count_lines(4, pawn)*50) - (0.1*self.turn)
+        if self.count_lines(4, pawn) >= 1:
+            reward = 50.0
+        else:
+            reward = (self.count_lines(3, pawn) * 3) + self.count_lines(2, pawn) - (0.1*self.turn)
+        return reward
