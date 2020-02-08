@@ -22,11 +22,8 @@ class Puissance4Env(gym.Env):
         self.pawn = 0
         self.reward = 0
         self.last_turn_reward = [0, 0]
-
-        # Tkinter
-        self.window = None
-        self.canvas = None
-        self.label = None
+        self.thread = None
+        self.done = False
 
         # Créer la grille
         for y in range(6):
@@ -64,39 +61,22 @@ class Puissance4Env(gym.Env):
             self.turn_logical = False
             self.turn += 1
 
-        return (self.pawn-1, tuple(tuple(i) for i in self.grid)), self.reward, self.has_won or self.is_grid_full(), {}
+        self.done = self.has_won or self.is_grid_full()
+
+        return (self.pawn-1, tuple(tuple(i) for i in self.grid)), self.reward, self.done, {}
 
     def reset(self):
-        if not self.window is None:
-            self.window.destroy()
-            self.window.mainloop()
+        if self.thread is not None:
+            self.thread.stop()
         self.__init__()
 
     def render(self, mode='human', close=False):
-        if self.window is None:
-            self.window = tk.Tk()
-            self.window.geometry('700x650')
-            self.window.resizable(0, 0)
-            self.window.title = "Puissance4"
-
-            self.canvas = tk.Canvas(self.window, height=600, width=700)
-            self.canvas.pack()
-            tk.Label(self.window, text="Yellow: Player 0 | Red: Player 1").pack()
-            self.label = tk.Label(self.window, text="Player 1 Score: 0.0")
-            self.label.pack()
-            self.window.update()
-
-        self.canvas.create_rectangle(0, 0, 700, 600)
-        for y in range(len(self.grid)):
-            for x in range(len(self.grid[y])):
-                if self.grid[y][x] == 0:
-                    self.canvas.create_rectangle(x*100, y*100, (x+1)*100, (y+1)*100, fill="white")
-                elif self.grid[y][x] == 1:
-                    self.canvas.create_rectangle(x*100, y*100, (x+1)*100, (y+1)*100, fill="yellow")
-                else:
-                    self.canvas.create_rectangle(x*100, y*100, (x+1)*100, (y+1)*100, fill="red")
-        self.label.configure(text="Player {} ".format(self.pawn-1) + "Score: {}".format(self.reward))
-        self.window.update()
+        if close:
+            self.thread.done = False
+        if self.thread is None:
+            self.thread = WindowThread()
+        else:
+            self.thread.update(self.grid, self.pawn, self.reward, self.done)
 
     def is_column_full(self, colonne):
         for i in self.grid:
@@ -176,3 +156,71 @@ class Puissance4Env(gym.Env):
             self.last_turn_reward[0] = reward
             reward = reward - (0.1*self.last_turn_reward[1])
         return reward
+
+
+class WindowThread(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+        self.loop = True
+        self.update_needed = False
+        self.grid = None
+        self.pawn = None
+        self.done = False
+        self.reward = None
+        self.canvas = None
+        self.window = None
+        self.start()
+
+    def update(self, grid, pawn, reward, done):
+        self.grid = grid
+        self.pawn = pawn
+        self.reward = reward
+        self.update_needed = True
+        self.done = done
+
+    def destroyed(self):
+        if self.done:
+            self.window.destroy()
+            self.window = None
+            self.loop = False
+
+    def stop(self):
+        self.loop = False
+        if self.window is not None:
+            self.window.destroy()
+            self.window = None
+            self.loop = False
+
+    def run(self):
+        while self.loop:
+            if self.window is None and not self.done:
+                self.window = tk.Tk()
+                self.window.protocol("WM_DELETE_WINDOW", self.destroyed)
+                self.window.geometry('700x650')
+                self.window.resizable(0, 0)
+                self.window.title = "Puissance4"
+
+                self.canvas = tk.Canvas(self.window, height=600, width=700)
+                self.canvas.pack()
+                tk.Label(self.window, text="Yellow: Player 0 | Red: Player 1").pack()
+                self.label = tk.Label(self.window, text="Player 1 Score: 0.0")
+                self.label.pack()
+
+            if self.update_needed:
+                self.update_needed = False
+                self.canvas.create_rectangle(0, 0, 700, 600)
+                for y in range(len(self.grid)):
+                    for x in range(len(self.grid[y])):
+                        if self.grid[y][x] == 0:
+                            self.canvas.create_rectangle(x*100, y*100, (x+1)*100, (y+1)*100, fill="white")
+                        elif self.grid[y][x] == 1:
+                            self.canvas.create_rectangle(x*100, y*100, (x+1)*100, (y+1)*100, fill="yellow")
+                        else:
+                            self.canvas.create_rectangle(x*100, y*100, (x+1)*100, (y+1)*100, fill="red")
+                self.label.configure(text="Player {} ".format(self.pawn-1) + "Score: {}".format(self.reward))
+
+            if self.loop and self.window is not None:
+                self.window.update()
+
+            if self.done:
+                self.stop()
