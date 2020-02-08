@@ -66,13 +66,25 @@ class Puissance4Env(gym.Env):
         return (self.pawn-1, tuple(tuple(i) for i in self.grid)), self.reward, self.done, {}
 
     def reset(self):
-        if self.thread is not None:
-            self.thread.stop()
-        self.__init__()
+        # Variables
+        self.grid = []
+        self.has_won = False
+        self.turn = 0
+        self.turn_logical = False
+        self.pawn = 0
+        self.reward = 0
+        self.last_turn_reward = [0, 0]
+        self.done = False
+
+        # Créer la grille
+        for y in range(6):
+            self.grid.append([0] * 7)
 
     def render(self, mode='human', close=False):
         if close:
-            self.thread.close()
+            if self.thread is not None :
+                self.thread.close()
+            return
         if self.thread is None:
             self.thread = WindowThread()
         else:
