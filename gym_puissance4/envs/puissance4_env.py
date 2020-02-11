@@ -50,10 +50,6 @@ class Puissance4Env(gym.Env):
             error.InvalidAction("Action must be a number between 0 and 6 inclued.")
 
         play_valid = self.add_pawn(action)
-        self.reward = -1
-
-        if play_valid:
-            self.reward = self.get_reward()
 
         if not self.turn_logical:
             self.turn_logical = True
@@ -63,7 +59,7 @@ class Puissance4Env(gym.Env):
 
         self.done = self.has_won or self.is_grid_full()
 
-        return (self.pawn-1, tuple(tuple(i) for i in self.grid)), self.reward, self.done, {}
+        return tuple(tuple(i) for i in self.grid), self.get_reward(), self.done, {}
 
     def reset(self):
         # Variables
@@ -160,15 +156,11 @@ class Puissance4Env(gym.Env):
 
     def get_reward(self):
         if self.count_lines(4) >= 1:
-            reward = 50.0
-        elif self.turn_logical:
-            reward = (self.count_lines(3) * 6) + self.count_lines(2) - (0.1*self.turn)
-            self.last_turn_reward[1] = reward
-            reward = reward - (0.1*self.last_turn_reward[0])
+            reward = 1
+        elif self.is_grid_full():
+            reward = 0.5
         else:
-            reward = (self.count_lines(3) * 6) + self.count_lines(2) - (0.1*self.turn)
-            self.last_turn_reward[0] = reward
-            reward = reward - (0.1*self.last_turn_reward[1])
+            reward = 0
         return reward
 
 
