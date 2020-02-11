@@ -156,12 +156,12 @@ class Puissance4Env(gym.Env):
 
     def get_reward(self):
         if self.count_lines(4) >= 1:
-            reward = 1
+            self.reward = 1
         elif self.is_grid_full():
-            reward = 0.5
+            self.reward = 0.5
         else:
-            reward = 0
-        return reward
+            self.reward = 0
+        return self.reward
 
 
 class WindowThread(Thread):
