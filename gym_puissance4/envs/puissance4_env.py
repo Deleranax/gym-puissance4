@@ -76,7 +76,7 @@ class Puissance4Env(gym.Env):
         for y in range(6):
             self.grid.append([0] * 7)
 
-        return (None, tuple(tuple(i) for i in self.grid))
+        return tuple(tuple(i) for i in self.grid)
 
     def render(self, mode='human', close=False):
         if close:
