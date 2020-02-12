@@ -57,7 +57,10 @@ class Puissance4Env(gym.Env):
             self.turn_logical = False
             self.turn += 1
 
-        reward = self.get_reward()
+        if play_valid:
+            reward = self.get_reward()
+        else:
+            reward = -0.1
 
         self.done = self.has_won or self.is_grid_full()
 
