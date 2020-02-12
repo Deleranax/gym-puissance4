@@ -57,9 +57,11 @@ class Puissance4Env(gym.Env):
             self.turn_logical = False
             self.turn += 1
 
+        reward = self.get_reward()
+
         self.done = self.has_won or self.is_grid_full()
 
-        return tuple(tuple(i) for i in self.grid), self.get_reward(), self.done, {}
+        return tuple(tuple(i) for i in self.grid), reward, self.done, {}
 
     def reset(self):
         # Variables
@@ -150,7 +152,7 @@ class Puissance4Env(gym.Env):
                     condition = condition and self.grid[y + i][x - i] == self.pawn
                 if condition:
                     count += 1
-        if length == 4 and count > 0:
+        if length == 4 and count >= 1:
             self.has_won = True
         return count
 
