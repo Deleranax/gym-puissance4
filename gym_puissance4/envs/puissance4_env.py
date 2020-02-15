@@ -24,6 +24,7 @@ class Puissance4Env(gym.Env):
         self.last_turn_reward = [0, 0]
         self.thread = None
         self.done = False
+        self.columns = [0, 0, 0, 0, 0, 0, 0]
 
         # Créer la grille
         for y in range(6):
@@ -70,6 +71,7 @@ class Puissance4Env(gym.Env):
         self.reward = 0
         self.last_turn_reward = [0, 0]
         self.done = False
+        self.columns = [0, 0, 0, 0, 0, 0, 0]
 
         # Créer la grille
         for y in range(6):
@@ -88,27 +90,22 @@ class Puissance4Env(gym.Env):
             self.thread.update(self.grid, self.pawn, self.reward, self.done)
 
     def is_column_full(self, colonne):
-        if self.grid[0][colonne] == 0:
+        if self.columns[colonne] < 6:
             return False
         return True
 
     def is_grid_full(self):
-        for i in self.grid[0]:
-            if i == 0:
-                return False
+        if self.columns[0] + self.columns[1] + self.columns[2] + self.columns[3] + self.columns[4] + self.columns[5] + self.columns[6] < 42:
+            return False
         return True
 
     def add_pawn(self, colonne):
         if self.is_column_full(colonne):
             return False
         else:
-            for i in range(len(self.grid)):
-                if self.grid[i][colonne] != 0:
-                    self.grid[i - 1][colonne] = self.pawn
-                    return True
-                elif i == len(self.grid) - 1:
-                    self.grid[i][colonne] = self.pawn
-                    return True
+            self.grid[5 - self.columns[colonne]][colonne] = self.pawn
+            self.columns[colonne] += 1
+            return True
 
     def count_lines(self, length):
         count = 0
@@ -155,10 +152,10 @@ class Puissance4Env(gym.Env):
     def get_reward(self, valid):
         if not valid:
             self.reward = -0.1
-        elif self.count_lines(4) >= 1:
-            self.reward = 1
         elif self.is_grid_full():
             self.reward = 0.5
+        elif self.count_lines(4) >= 1:
+            self.reward = 1
         else:
             self.reward = 0
 
@@ -188,7 +185,6 @@ class WindowThread(Thread):
         if self.done:
             self.window.destroy()
             self.window = None
-            self.loop = False
 
     def stop(self):
         self.loop = False
