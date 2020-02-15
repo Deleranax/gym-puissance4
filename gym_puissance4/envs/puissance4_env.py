@@ -35,7 +35,7 @@ class Puissance4Env(gym.Env):
             spaces.Discrete(2),
             spaces.Tuple(tuple(
                 spaces.Tuple(tuple(
-                    spaces.Discrete(3) for i in range(7)
+                    spaces.Discrete(3) for e in range(7)
                 )) for i in range(6)
             ))
         ))
@@ -58,13 +58,13 @@ class Puissance4Env(gym.Env):
             self.turn += 1
 
         if play_valid:
-            reward = self.get_reward()
+            self.reward = self.get_reward()
         else:
-            reward = -0.1
+            self.reward = -0.1
 
         self.done = self.has_won or self.is_grid_full()
 
-        return tuple(tuple(i) for i in self.grid), reward, self.done, {}
+        return tuple(tuple(i) for i in self.grid), self.reward, self.done, {}
 
     def reset(self):
         # Variables
@@ -85,7 +85,7 @@ class Puissance4Env(gym.Env):
 
     def render(self, mode='human', close=False):
         if close:
-            if self.thread is not None :
+            if self.thread is not None:
                 self.thread.close()
             return
         if self.thread is None:
@@ -100,8 +100,8 @@ class Puissance4Env(gym.Env):
         return True
 
     def is_grid_full(self):
-        for i in range(len(self.grid[0])):
-            if not self.is_column_full(i):
+        for i in self.grid[0]:
+            if i == 0:
                 return False
         return True
 
