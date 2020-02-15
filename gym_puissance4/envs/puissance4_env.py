@@ -46,9 +46,6 @@ class Puissance4Env(gym.Env):
         else:
             self.pawn = 2
 
-        if not action >= 0 or action <= 6:
-            error.InvalidAction("Action must be a number between 0 and 6 inclued.")
-
         play_valid = self.add_pawn(action)
 
         if not self.turn_logical:
@@ -57,10 +54,7 @@ class Puissance4Env(gym.Env):
             self.turn_logical = False
             self.turn += 1
 
-        if play_valid:
-            self.reward = self.get_reward()
-        else:
-            self.reward = -0.1
+        self.get_reward(play_valid)
 
         self.done = self.has_won or self.is_grid_full()
 
@@ -94,9 +88,8 @@ class Puissance4Env(gym.Env):
             self.thread.update(self.grid, self.pawn, self.reward, self.done)
 
     def is_column_full(self, colonne):
-        for i in self.grid:
-            if i[colonne] == 0:
-                return False
+        if self.grid[0][colonne] == 0:
+            return False
         return True
 
     def is_grid_full(self):
@@ -159,14 +152,15 @@ class Puissance4Env(gym.Env):
             self.has_won = True
         return count
 
-    def get_reward(self):
-        if self.count_lines(4) >= 1:
+    def get_reward(self, valid):
+        if not valid:
+            self.reward = -0.1
+        elif self.count_lines(4) >= 1:
             self.reward = 1
         elif self.is_grid_full():
             self.reward = 0.5
         else:
             self.reward = 0
-        return self.reward
 
 
 class WindowThread(Thread):
