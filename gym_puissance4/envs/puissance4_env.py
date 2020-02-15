@@ -21,10 +21,11 @@ class Puissance4Env(gym.Env):
         self.turn_logical = False
         self.pawn = 0
         self.reward = 0
-        self.last_turn_reward = [0, 0]
         self.thread = None
         self.done = False
         self.columns = [0, 0, 0, 0, 0, 0, 0]
+        self.last_three_lines = [0, 0]
+        self.last_two_lines = [0, 0]
 
         # Créer la grille
         for y in range(6):
@@ -69,9 +70,10 @@ class Puissance4Env(gym.Env):
         self.turn_logical = False
         self.pawn = 0
         self.reward = 0
-        self.last_turn_reward = [0, 0]
         self.done = False
         self.columns = [0, 0, 0, 0, 0, 0, 0]
+        self.last_three_lines = [0, 0]
+        self.last_two_lines = [0, 0]
 
         # Créer la grille
         for y in range(6):
@@ -107,57 +109,64 @@ class Puissance4Env(gym.Env):
             self.columns[colonne] += 1
             return True
 
-    def count_lines(self, length):
-        count = 0
+    def count_lines(self):
+        lines = [0, 0, 0]
 
         # Colonnes
         for x in range(len(self.grid[0])):
-            for y in range(len(self.grid) - length + 1):
+            for y in range(len(self.grid) - 3):
                 condition = True
-                for i in range(length):
+                for i in range(0, 4):
                     condition = condition and self.grid[y + i][x] == self.pawn
-                if condition:
-                    count += 1
+                    if condition and i > 0:
+                        lines[i - 1] += 1
 
         # Lignes
         for y in range(len(self.grid)):
-            for x in range(len(self.grid[0]) - length + 1):
+            for x in range(len(self.grid[0]) - 3):
                 condition = True
-                for i in range(length):
+                for i in range(0, 4):
                     condition = condition and self.grid[y][x + i] == self.pawn
-                if condition:
-                    count += 1
+                    if condition and i > 0:
+                        lines[i - 1] += 1
 
         # Digonales 1
-        for y in range(len(self.grid) - length + 1):
-            for x in range(len(self.grid[0]) - length + 1):
+        for y in range(len(self.grid) - 3):
+            for x in range(len(self.grid[0]) - 3):
                 condition = True
-                for i in range(length):
+                for i in range(0, 4):
                     condition = condition and self.grid[y + i][x + i] == self.pawn
-                if condition:
-                    count += 1
+                    if condition and i > 0:
+                        lines[i - 1] += 1
 
         # Digonales 2
-        for y in range(len(self.grid) - length + 1):
-            for x in range(length-1, len(self.grid[0])):
+        for y in range(len(self.grid) - 3):
+            for x in range(3, len(self.grid[0])):
                 condition = True
-                for i in range(length):
+                for i in range(0, 4):
                     condition = condition and self.grid[y + i][x - i] == self.pawn
-                if condition:
-                    count += 1
-        if length == 4 and count >= 1:
+                    if condition and i > 0:
+                        lines[i - 1] += 1
+
+        if lines[2] > 0:
             self.has_won = True
-        return count
+        return lines[2], lines[1], lines[0]
 
     def get_reward(self, valid):
+        four_lines, three_lines, two_lines = self.count_lines()
         if not valid:
             self.reward = -0.1
         elif self.is_grid_full():
             self.reward = 0.5
-        elif self.count_lines(4) >= 1:
+        elif four_lines > 0:
             self.reward = 1
+        elif three_lines > self.last_three_lines[self.pawn-1]:
+            self.reward = 0.5
+        elif two_lines > self.last_two_lines[self.pawn-1]:
+            self.reward = 0.1
         else:
             self.reward = 0
+        self.last_three_lines[self.pawn-1], self.last_two_lines[self.pawn-1] = three_lines, two_lines
 
 
 class WindowThread(Thread):
